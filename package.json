@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "seed": "tsx lib/seed.ts"
+    "seed": "tsx lib/seed.ts",
+    "verify:prod": "tsx scripts/verify-prod.ts"
   },
   "dependencies": {
     "@ai-sdk/openai": "^1.3.0",

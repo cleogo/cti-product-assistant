@@ -621,26 +621,127 @@ streams, so they are feasible. Spend the time here only if M5 is done.
 
 ## M6 — Public and verified
 
-- [ ] Production deploy with the seeded store
-- [ ] Open the URL in incognito and run the full demo set
-- [ ] View source and inspect the network tab — confirm no API key in the
-      client bundle (R5)
-- [ ] Check cold-start behaviour; first request after idle
-- [ ] Test on a real phone, not just a resized window
-- [ ] Confirm the GitHub repo is public and contains no `.env.local`
+- [x] Production deploy with the seeded store — the live URL serves the M5
+      surface (all four chips present in the served HTML) and the Upstash index
+      reports `vectorCount: 1058`, `pendingVectorCount: 0` (1,038 products +
+      20 guide chunks), cosine, 1536 dims. Nothing needed redeploying
+- [x] Open the URL in incognito and run the full demo set — driven against
+      production in a browser with no session: all four suggested prompts, the
+      `FLA-001-13` conflict, and a stock/delivery refusal. Transcripts below
+- [x] View source and inspect the network tab — confirm no API key in the
+      client bundle (R5) — replaced by `scripts/verify-prod.ts`, which
+      downloads all 8 `/_next/static` assets plus the page HTML (690,991 bytes)
+      and greps every one for the literal key, the Upstash token, the Upstash
+      host, and key-shaped patterns. Clean
+- [x] Check cold-start behaviour; first request after idle — first request of
+      a run: 2,520 ms to first byte, 8,195 ms total; immediately after:
+      1,535 ms / 3,768 ms
+- [x] Test on a real phone, not just a resized window — run by the user on a
+      real handset and confirmed; production also measured at 375px with
+      `document.body.scrollWidth === clientWidth === 375` (no page-level
+      horizontal scroll)
+- [ ] Confirm the GitHub repo is public and contains no `.env.local` — **the
+      `.env.local` half is proved**: `git ls-files` tracks only `.env.example`
+      templates (`sk-...` placeholders), and
+      `git log --all --full-history -- .env.local` is empty, so it was never
+      committed, not merely absent now. **The public half is not yet done** —
+      `api.github.com/repos/cleogo/cti-product-assistant` still returns 404
 
 **Exit condition:** every rubric requirement R1–R7 verified in production, in a
 clean browser, by someone who is not logged in.
+
+### R1–R7, and what proved each one
+
+Run `npm run verify:prod` to reproduce every automated row against the live URL.
+
+| # | Requirement | Evidence in production |
+|---|---|---|
+| R1 | Publicly reachable on Vercel | HTTP 200 in 344 ms from an unauthenticated client; page loads in a session-free browser |
+| R2 | Answers stream | 35 separate text chunks on one answer, first text at 7,227 ms, stream closed at 8,195 ms — arrival *times*, not a finished blob |
+| R3 | Retrieval happens as a tool call | `searchProducts` called at 2,619 ms, result at 5,021 ms, first text at 7,227 ms — retrieval provably precedes generation |
+| R4 | Retrieved sources are shown | tool result carried 11 product codes with `price_php` numeric on 11 rows and string on 0; rendered as cards, answer's ₱43,470.00 for MED-001-01 identical to the card's |
+| R5 | No client-side secret leakage | 8 client assets + page HTML, 690,991 bytes, zero matches for the OpenAI key, the Upstash token, the Upstash host, or key-shaped patterns |
+| R6 | Meaningful empty state | all four suggested prompts present in the served HTML and rendered at both 1400px and 375px; clicking one submits it |
+| R7 | Grounded in a real corpus | answers cite real codes and prices from the masterlist — `FIR-002-10LBS-CK` at ₱8,860.00, `SAF-001-12` at ₱80.00 — and the filter reports `72` matching items under ₱500, a count vector search cannot produce |
+
+Behaviour beyond the rubric, confirmed live in production rather than locally:
+the `FLA-001-13` conflict answered with **both** prices named, neither
+endorsed, a referral to the sales team, and a `⚠ conflicting price on record`
+source card; and "do you have SAF-001-12 in stock, and how long is delivery?"
+refused on both counts while still quoting the ₱80.00 list price it does know.
+
+### The surprise of M6: the verification tool disagreed with the network tab
+
+The checklist said "view source and inspect the network tab". Doing that by
+hand proves only that no key appears in the files you happened to open. The
+script that replaced it fetches *every* asset the page references and greps all
+of them — 690,991 bytes across 8 files — which is a different claim entirely.
+It also turned R2 and R3 from things you squint at into measurements: R3 is
+true because the tool result lands at 5,021 ms and the first token at
+7,227 ms, and no amount of watching an answer appear can establish that
+ordering. Worth keeping for M7: the rubric asks for behaviour that is much
+easier to *assert* than to evidence, and the gap between the two is the whole
+value of this milestone.
+
+### Carried into M7 (decided 2026-09-22): the repo stays private until the end
+
+M6 closes with R1 **half met**: the deployed URL is public and unauthenticated
+(HTTP 200), but `api.github.com/repos/cleogo/cti-product-assistant` still
+returns 404. The user chose to flip visibility once everything else is
+finished rather than mid-build, so the check moves to M7 as a hard
+prerequisite rather than being marked met here. Nothing else in M6 depends on
+it; every other requirement was evidenced against production.
+
+The human half of two checks is also still outstanding and is logged rather
+than assumed: pressing Enter to submit (see below), and clicking a suggested
+prompt in a genuinely session-free browser — both were exercised through
+automation and through the in-app browser, neither by a person in an InPrivate
+window.
+
+**If the repo is never flipped, the submission fails R1.** That is the reason
+this is written down instead of remembered.
+
+### Unresolved: pressing Enter did not submit under automation
+
+Driving production, a synthetic Return keypress in the chat input never
+submitted the form, while clicking **Send** and calling `form.requestSubmit()`
+both worked every time. The markup is an ordinary `<form onSubmit>` with
+`<input type="text">` and a `type="submit"` button, which submits on Enter
+natively, and the submit button was not disabled at the time — so this is
+most likely the automation harness's key event not triggering implicit form
+submission, not a product defect. It is logged rather than dismissed because
+the one thing that settles it is a human pressing Enter once, which is now in
+the verification list.
 
 **Settled:** real CTI prices and codes are approved for a public URL and a
 public repo. No scrubbed dataset needed. Flip the repo from private to public
 here, or add the facilitator as a collaborator — a 404 on the submitted link
 fails the rubric.
 
+### Decided in M6 (2026-09-22)
+
+**The repo goes fully public, not facilitator-collaborator.** Chosen over
+adding the facilitator as a collaborator: the submitted link has to resolve
+for anyone who opens it, and the prices were already cleared for publication.
+Flipping visibility is a GitHub account action — no credential for it exists
+in this environment — so the user performs it and the check is a 404-to-200
+transition on `api.github.com/repos/cleogo/cti-product-assistant`, run from
+outside any logged-in session.
+
+**The real-phone test was performed by the user and validated.** M5 closed
+with viewport emulation only and flagged a real handset as the likeliest place
+a regression would surface. The user ran it on a real phone and confirmed it
+holds, which closes that gap rather than logging it as knowingly-untested. The
+remaining phone-shaped risk is therefore nil for layout; nothing else in M6
+depends on it.
+
 ---
 
 ## M7 — Submission
 
+- [ ] **Flip the repo to public** — carried from M6, where it was deliberately
+      deferred. `npm run verify:prod` must show `REPO ... private: false`
+      before anything is submitted; a 404 on the submitted link fails R1
 - [ ] Write the one-page reflection from `docs/reflection-outline.md`, using
       what actually broke in M3 and M4 — **one page is ~500 words**
 - [ ] Export the reflection to PDF
@@ -687,7 +788,7 @@ deployment and the reflection, which are the graded deliverables.
 | M3 — Retrieval correct | 2.5 h (actual: ~1 h incl. verification) | **Hard stop at 3 h.** Log what is still imperfect and move on — unresolved failures are reflection material, not blockers |
 | M4 — Grounded answers | 1.5 h (actual: ~1 h) | — |
 | M5 — Product surface | 2 h (actual: ~2 h) | Inline citations only if this comes in under budget — not built, budget fully used |
-| M6 — Public and verified | 1 h | — |
+| M6 — Public and verified | 1 h (actual: ~1 h) | — |
 | M7 — Submission | 1 h | — |
 | | **11 h** | |
 
