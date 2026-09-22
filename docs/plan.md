@@ -331,18 +331,42 @@ under budget.
 Wire the model to the tools. Still no UI — drive it from a script or the
 starter's raw API route.
 
-- [ ] Write the system prompt against the eight rules in the spec, plus the
+- [x] Write the system prompt against the eight rules in the spec, plus the
       answer-format contract (compact table) decided at the end of M3
-- [ ] Write both tool descriptions; make the search/filter boundary explicit
-- [ ] Test routing: does "under ₱500" call `filterProducts` and not
-      `searchProducts`?
-- [ ] Test refusals: stock, lead time, discount, warranty, quality comparison
-- [ ] Test the conflicting-code warning on `FLA-001-13`
-- [ ] Test related-item suggestions on a harness question
+      (`lib/prompt.ts`)
+- [x] Write both tool descriptions; make the search/filter boundary explicit
+      (`lib/tools.ts`, split out of the route so the harness grades the real ones)
+- [x] Test routing: does "under ₱500" call `filterProducts` and not
+      `searchProducts`? — asserted in `scripts/grade.ts`
+- [x] Test refusals: stock, lead time, discount, warranty, quality comparison
+- [x] Test the conflicting-code warning on `FLA-001-13`
+- [x] Test related-item suggestions on a harness question
 
 **Exit condition:** the grounding questions from `docs/reflection-outline.md`
 all behave — refusals refuse, the conflict warns, and no invented prices appear
 in ten consecutive varied questions.
+
+### Decided in M4 (2026-09-22): prompt first on gpt-4o-mini, escalate only on evidence
+
+All four observed failures below are instruction-following failures, not
+retrieval failures — the model collapsed a variant list it had been handed in
+full, ignored a `total_matching` sitting in the tool result, and quoted a price
+on a record explicitly flagged as conflicting. A stronger chat model plausibly
+fixes all four with no prompt work at all.
+
+**Chosen: write the system prompt against `gpt-4o-mini` first and run the
+grading harness. Escalate to `gpt-4o` only if it fails.** The alternative —
+upgrading pre-emptively — is cheap in money and expensive in knowledge: it
+would leave us unable to say whether the prompt or the model was the problem.
+One extra grading run buys that answer.
+
+*Reflection material either way.* "A sharper prompt fixed it on the small
+model" and "no prompt held eight rules on the small model" are both concrete
+findings; "we upgraded and it worked" is not.
+
+*Escalation trigger, fixed in advance so it is not negotiated after seeing
+results:* any of the four target-list rows still failing, or any invented price
+across the ten-question grounding run.
 
 ### M4's target list, observed 2026-09-22 with M3's placeholder prompt
 
@@ -364,6 +388,106 @@ Banned phrasing, recorded in `docs/spec.md`.
 **Watch for:** a vague tool description causing general-knowledge answers. This
 is named in the brief. If the model answers a product question without calling
 a tool, the description is the problem, not the prompt.
+
+### The surprise of M4: the system prompt was the largest source of hallucination
+
+Every example in the first prompt came back as a fact.
+
+Rule 7 illustrated the shape of a good refusal with *"I cannot tell you stock
+— the sales team can confirm. The 42L push trash bin is TRA-001-18-42L at
+₱2,710.00."* Asked about stock, the model refused correctly, called no tool,
+and quoted **₱2,710.00**. The real price is **₱1,720.00**. The figure it gave
+the customer came from the instructions telling it not to invent figures.
+
+Rule 8 did the same thing one rule later: it listed the construction-site
+pairing (hard hats, vests, safety shoes, gloves, cones) as an illustration, and
+the model recited that list from memory without retrieving anything.
+
+Both failures are invisible to a reader. The answers are fluent, correctly
+formatted, appropriately hedged, and wrong — and the invented price is *more*
+plausible than a real one, because it was written by someone trying to sound
+like the corpus. Only the mechanical check caught it: every ₱ figure in an
+answer must appear as a `price_php` in that turn's own tool results.
+
+**Fix:** no concrete price, code, or product list survives in the prompt as an
+example. Format examples use codes shown as format (`₱43,470.00` as a shape,
+`FIR-001-11E` as the named hazard in rule 4), and the prompt states outright
+that its own examples are never sources of fact. Refusals now require a tool
+call first — refusing is not a reason to skip the lookup, and skipping it is
+exactly when invention happened.
+
+*Worth the reflection:* the standard advice is to write prompts with concrete
+examples. For a RAG system over a price list, a concrete example is an
+un-grounded fact sitting inside the one instruction block the model trusts most.
+
+### The second M4 failure: a narrowing filter reports a confidently small number
+
+"What safety equipment do you have under ₱500?" returned **"There are 4
+items"** — the model had passed a Fire Safety department filter nobody asked
+for. The true count is **214**, the figure this plan's target list named.
+
+It passed the first version of the check, which only asked whether the answer
+stated its own `total_matching`. It did state it. The number was just the
+answer to a different question.
+
+This is the `filterProducts` failure mode reappearing one layer up. The tool
+exists so a truncated list is never presented as complete; a guessed filter
+makes the list genuinely complete and the *question* wrong instead, which no
+amount of `total_matching` discipline catches. Fixed in both places — the
+prompt forbids narrowing beyond what was asked, and the tool description now
+names the twelve real departments and says "safety equipment" is not one of
+them. The assertion now pins 214 rather than self-consistency.
+
+### The prefix table is not retrievable, and that is the M3 lesson again
+
+"How do your product codes work?" should reach
+`02-product-code-structure.md` § "The three-letter prefixes". It does not —
+that section is not in the guide's top **8** for this query. A 26-row markdown
+table of prefix-to-meaning mappings embeds as poorly as the price table that
+started this whole corpus design, one level up.
+
+Not fixed: the "Code format" section retrieves at 0.806 and answers the
+question with worked examples, which is what the grading assertion now checks.
+Logged as a known gap. The fix, if M5 comes in under budget, is the same one
+the products needed — prose around the table, not the table alone.
+
+### Model escalation: not triggered
+
+The prompt was written and graded against **`gpt-4o-mini`**, per the decision
+recorded above. It passes 65/65 with no failures, so the pre-committed
+escalation to `gpt-4o` did not fire and the deployed model stays `gpt-4o-mini`.
+
+The finding is the useful part: all four target-list failures were fixed by the
+prompt, and two of them were *caused* by it. The model was never the problem.
+Re-grade on another model at any time with
+`CHAT_MODEL=gpt-4o npx tsx scripts/grade.ts` — `lib/model.ts` reads the env var.
+
+**Exit condition: met 2026-09-22.** `npx tsx scripts/grade.ts` reports 65
+passed, 0 failed across 16 questions — the four target-list rows, four
+refusals, and the no-invented-price check on every answer. The user then ran
+the app by hand against the unautomated cases and verified the milestone.
+
+**Still unasserted by the harness, and therefore still a risk at M6.** The
+grading run is single-turn: each question is a fresh `prompt` with no
+conversation history. Nothing in `scripts/grade.ts` covers
+
+- **multi-turn follow-ups** — whether the two fire blanket lines survive a
+  "what about the biggest one?" once the table has left the immediate question;
+- **pressure on a conflicted code** — the model has to refuse `FLA-001-13`
+  three times, including when the customer supplies the number themselves
+  ("fine, I'll take the ₱280 one") and it need only agree;
+- **the no-match case** — spec rule 6, say so and ask for the code. Asserted
+  nowhere. The harness only ever asks for things that exist, so the exact-match
+  layer's whole reason for being is untested on a miss;
+- **freely-phrased order requests** — the banned-phrase check is four regexes
+  against sentences already observed, so it catches the known wording and
+  little else;
+- **colloquial and malformed input** — "cheap gloves po", "MED00101" unhyphenated;
+- **run-to-run consistency** — every question was asked exactly once, and the
+  model is not deterministic.
+
+Verified by hand this milestone, not by assertion. If a regression appears in
+M6 it will most likely be in one of these six.
 
 ---
 
@@ -470,7 +594,7 @@ deployment and the reflection, which are the graded deliverables.
 | M1 — Skeleton, deployed | 1.5 h (actual: ~1.5 h) | Stop at 2 h; a store that won't provision is a store to swap, not debug |
 | M2 — Corpus seeded | 1.5 h (actual: ~1.5 h) | — |
 | M3 — Retrieval correct | 2.5 h (actual: ~1 h incl. verification) | **Hard stop at 3 h.** Log what is still imperfect and move on — unresolved failures are reflection material, not blockers |
-| M4 — Grounded answers | 1.5 h | — |
+| M4 — Grounded answers | 1.5 h (actual: ~1 h) | — |
 | M5 — Product surface | 2 h | Inline citations only if this comes in under budget |
 | M6 — Public and verified | 1 h | — |
 | M7 — Submission | 1 h | — |

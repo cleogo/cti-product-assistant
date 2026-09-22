@@ -185,6 +185,30 @@ The model must:
    pattern — a harness pairs with a lanyard, a welding mask with gloves and an
    apron.
 
+### Two cross-cutting constraints added in M4
+
+Added after the first graded run, and binding on the prompt alongside the eight
+rules above.
+
+**A. Nothing in the prompt is a source of fact.** The model may not state a
+product code, price, or product name that did not appear in a tool result in
+the current turn — including one that appears in its own instructions. The
+first prompt illustrated a refusal with a made-up price and the model quoted
+that price to the customer (see `docs/plan.md`, M4). Prompt examples now
+demonstrate format only.
+
+**B. A tool call is required before a refusal.** Refusing a question about
+stock, discounts or warranty is still answering a question about a real
+product. The lookup happens first; the answer then refuses the uncovered part
+and quotes the code and price that were retrieved. Skipping the call is the
+condition under which invention occurred.
+
+**C. Filters are never narrowed beyond what was asked.** If the question does
+not name a real department or category, `filterProducts` is called on price
+alone. A guessed filter returns a complete, correct list for a question the
+customer did not ask, and `total_matching` cannot reveal the substitution —
+"4 items" where the true answer is 214.
+
 ### Answer format — decided 2026-09-22, after seeing M3's raw output
 
 A multi-item answer renders as a **compact table**: code, the distinguishing
