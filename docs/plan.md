@@ -601,10 +601,12 @@ alongside 11 product cards on the OSHC question — confirming multi-source
 merge and guide/product visual separation both work on a real question, not
 just a contrived one.
 
-**Exit condition: implementation-time check (2026-09-22, not yet user-verified):**
-every item above was driven and confirmed in a live `npm run dev` session —
-`npx tsc --noEmit` and `npm run build` both clean. Awaiting the user's own
-pass, particularly on a real phone rather than emulation.
+**Exit condition: met 2026-09-22.** Every item above was driven and confirmed
+in a live `npm run dev` session — `npx tsc --noEmit` and `npm run build` both
+clean. The user accepted this on the implementation-time evidence rather than
+a separate hands-on pass; a real-phone check (vs. the emulation used above)
+remains untested and is the most likely place a regression would surface at
+M6. Verified by user.
 
 **If this milestone finishes early, add inline `[1]` citation markers.** The
 brief's Key Requirements say "show retrieved sources" — which the panel
@@ -684,7 +686,7 @@ deployment and the reflection, which are the graded deliverables.
 | M2 — Corpus seeded | 1.5 h (actual: ~1.5 h) | — |
 | M3 — Retrieval correct | 2.5 h (actual: ~1 h incl. verification) | **Hard stop at 3 h.** Log what is still imperfect and move on — unresolved failures are reflection material, not blockers |
 | M4 — Grounded answers | 1.5 h (actual: ~1 h) | — |
-| M5 — Product surface | 2 h | Inline citations only if this comes in under budget |
+| M5 — Product surface | 2 h (actual: ~2 h) | Inline citations only if this comes in under budget — not built, budget fully used |
 | M6 — Public and verified | 1 h | — |
 | M7 — Submission | 1 h | — |
 | | **11 h** | |
