@@ -45,6 +45,7 @@ milestone and opens the next. Do not implement a milestone outside this cycle.
 npm run dev                          # local dev server
 npm run seed                         # embed corpus into Upstash Vector
 python scripts/build_corpus.py       # regenerate corpus from the xlsx
+python scripts/build_pricelist_pdf.py  # rebuild the PDF, re-stamp page numbers
 npx tsx scripts/query.ts "<query>"   # query the store directly, no UI
 npm run verify:prod                  # re-run the R1-R7 rubric evidence against prod
 ```
@@ -71,8 +72,11 @@ corpus/           generated RAG corpus — see corpus/README.md
   products.csv      same records, tabular; inspection only
   categories.json   12 departments, 37 categories
   guide/            prose docs; chunk by ## heading
+data/
+  cti-price-masterlist.pdf  printed price list; the `page` metadata points here
 scripts/
   build_corpus.py   xlsx -> corpus (regenerates everything in corpus/)
+  build_pricelist_pdf.py  corpus -> data/*.pdf; stamps `page` back into corpus
 docs/               spec, plan, design decisions, reflection material
   14A-nextjs-rag/   course starter, reference copy — do not edit
   14A-chainlit-rag/ course starter, not used (FAISS is in-process)
@@ -93,6 +97,12 @@ price out of generated text discards that guarantee.
 
 **`price_php` is an integer.** Keep it numeric through ingest — `filterProducts`
 compares and sorts on it.
+
+**Corpus generation is two stages, in order.** `build_corpus.py` writes
+`corpus/` from the xlsx; `build_pricelist_pdf.py` then renders
+`data/cti-price-masterlist.pdf` and stamps each record's `page` back into the
+corpus. Running stage 1 alone leaves every record without a `page`. Stage 2
+never touches the embedded `text`, so it needs no re-seed.
 
 **Edit the corpus at the source.** `corpus/` is generated. Change
 `scripts/build_corpus.py` and regenerate; do not hand-edit the jsonl or csv.

@@ -45,20 +45,39 @@ to say so rather than guess.
   mobile layout — tables scroll inside their own container instead of
   breaking the page.
 
-## A note on the corpus: a spreadsheet, not PDFs
+## The corpus: a spreadsheet that became a document
 
-The course starter ingests PDFs and attaches a page number to each chunk. This
-project replaces that with a price masterlist, and the metadata is product
-code, category, department, price band, colours and a data-quality flag rather
-than a page number — a deliberate swap, not an omission. A page number is a
-*locator* for prose; for a catalog row the locator is the product code, and it
-is what every answer quotes.
+The source is a price masterlist, not prose — so the usual RAG shape did not
+fit, and two things were built rather than assumed.
 
-The trade that matters: **each record is one atomic product and is never
-re-chunked.** Splitting a row would separate a name from its price, which is
-the fastest way to quote a real price for the wrong item. Chunk size here is
-therefore a property of the data, not a tuning knob — the reasoning is in
+**Each record is one atomic product and is never re-chunked.** Splitting a row
+would separate a name from its price, which is the fastest way to quote a real
+price for the wrong item. Chunk size here is a property of the data, not a
+tuning knob. The reasoning is in
 [`docs/corpus-design-decisions.md`](docs/corpus-design-decisions.md).
+
+**The price list is also a real document, and every source card cites its
+page.** A spreadsheet has no pages, so
+[`scripts/build_pricelist_pdf.py`](scripts/build_pricelist_pdf.py) renders one:
+[`data/cti-price-masterlist.pdf`](data/cti-price-masterlist.pdf), 26 pages,
+1,038 products grouped by department and category, with the five
+conflicting-price rows marked in the margin.
+
+The page numbers are *derived from that document*, not decorative. Pagination
+is computed in Python on a fixed unit grid, the stylesheet renders exactly that
+grid, and the build fails if the printed page count ever diverges from the
+computed one — so a card reading `Pricelist p.18` means page 18 of the PDF has
+that product on it. Verified by sampling 46 products and checking the extracted
+text of each cited page.
+
+```bash
+python scripts/build_corpus.py         # 1. xlsx    -> corpus/
+python scripts/build_pricelist_pdf.py  # 2. corpus  -> data/*.pdf + page numbers
+```
+
+Stage 2 writes `page` into the corpus metadata but never into the embedded
+`text`: a page number is a locator, not something anyone searches for, and
+changing the text would mean re-embedding 1,038 chunks for no retrieval gain.
 
 ## Stack
 
@@ -91,8 +110,11 @@ corpus/                generated RAG corpus — see corpus/README.md
   products.jsonl        1,038 product chunks, embedded
   products.json          same records without embedded text, filtered in-process
   guide/                 prose docs on pricing, codes, and the catalog
+data/
+  cti-price-masterlist.pdf   the printed price list; source cards cite its pages
 scripts/
   build_corpus.py       xlsx -> corpus/ (regenerates everything in corpus/)
+  build_pricelist_pdf.py corpus -> data/*.pdf, and stamps page numbers back
   query.ts              query the vector store directly, no UI
   eval.ts               retrieval correctness harness, no model
   grade.ts              full grading harness — real prompt, real tools, real model
@@ -131,6 +153,7 @@ npx tsx scripts/query.ts "stethoscope"   # query the vector store directly
 npx tsx scripts/eval.ts                  # retrieval correctness, no model
 npx tsx scripts/grade.ts                 # full grading harness against the real model
 python scripts/build_corpus.py           # regenerate corpus/ from the source spreadsheet
+python scripts/build_pricelist_pdf.py    # rebuild the PDF and re-stamp page numbers
 ```
 
 ## What's out of scope

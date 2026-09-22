@@ -23,6 +23,13 @@ export type Product = {
   colors: string[];
   attributes: Record<string, string | number | boolean>;
   data_quality_flag?: string;
+  /**
+   * Page in data/cti-price-masterlist.pdf where this product is printed.
+   * Stamped by scripts/build_pricelist_pdf.py, which derives it from the
+   * document's real pagination rather than guessing — open the page and the
+   * product is on it.
+   */
+  page: number;
 };
 
 /** Every record as generated, 1,038 rows including both halves of each duplicate. */

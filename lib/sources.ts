@@ -19,6 +19,8 @@ export type ProductSource = {
   price_php: number;
   colors?: string[];
   data_quality_flag?: string;
+  /** Page in the printed price list this product appears on. */
+  page?: number;
 };
 
 export type GuideSource = {
@@ -51,6 +53,7 @@ function toProduct(v: Record<string, unknown>): ProductSource {
     price_php: Number(v.price_php),
     colors: Array.isArray(v.colors) ? (v.colors as string[]) : undefined,
     data_quality_flag: typeof v.data_quality_flag === 'string' ? v.data_quality_flag : undefined,
+    page: typeof v.page === 'number' ? v.page : undefined,
   };
 }
 

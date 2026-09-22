@@ -38,7 +38,14 @@ export function SourceCard({ source }: { source: Source }) {
         </span>
       </div>
       <div className="mt-0.5 text-slate-800">{source.name}</div>
-      {source.category && <div className="text-slate-400">{source.category}</div>}
+      <div className="flex items-baseline justify-between gap-2 text-slate-400">
+        {source.category && <span className="truncate">{source.category}</span>}
+        {source.page !== undefined && (
+          <span className="shrink-0 tabular-nums" title="Page in the printed price list">
+            Pricelist p.{source.page}
+          </span>
+        )}
+      </div>
       {flagged && (
         <div className="mt-1 text-[11px] font-medium text-rose-700">⚠ conflicting price on record</div>
       )}
