@@ -17,12 +17,13 @@ both layers at once.
 
 Get an empty app public before there is anything to break.
 
-- [ ] Copy `docs/14A-nextjs-rag/` to the repo root as the app; `npm install`
-- [ ] Move `corpus/` and `scripts/` into the app repo
-- [ ] `git init`, first commit, push to GitHub (private for now; **must be
-      public or facilitator-shared before M7**)
-- [ ] Provision an Upstash Vector index — see the constraint below
-- [ ] `.env.local` from `.env.example`: `OPENAI_API_KEY`,
+- [x] Copy `docs/14A-nextjs-rag/` to the repo root as the app; `npm install`
+- [x] Move `corpus/` and `scripts/` into the app repo (already at root — no-op)
+- [x] `git init`, first commit, pushed to GitHub — private for now at
+      github.com/cleogo/cti-product-assistant (**must be public or
+      facilitator-shared before M7**)
+- [x] Provision an Upstash Vector index — see the constraint below
+- [x] `.env.local` from `.env.example`: `OPENAI_API_KEY`,
       `UPSTASH_VECTOR_REST_URL`, `UPSTASH_VECTOR_REST_TOKEN`; confirm
       `.gitignore` covers it
 - [ ] Add the **same three** env var names to Vercel project settings
@@ -72,6 +73,14 @@ repo, the commit, and the exact commands/values to paste.
 - `OPENAI_API_KEY` returns HTTP 200 from `api.openai.com/v1/models`.
 - `.env.local` holds all three correctly-named vars, filled.
 - `.gitignore` already covers `.env.local`, `.env`, `.env*.local`.
+
+### Fixed in M1 (2026-09-22): next@15.5.0 CVE blocked Vercel deploy
+
+Flagged earlier in this milestone as "out of scope, npm warning only" — wrong
+call. Vercel hard-blocks the build on CVE-2025-66478 rather than just warning,
+so the first deploy attempt failed with "Vulnerable version of Next.js
+detected." Fixed by bumping to `next@15.5.25` (same 15.5 minor, latest
+patch). Verified locally: `npx tsc --noEmit` clean, `npm run build` succeeds.
 
 ### Investigated in M1 and dismissed: suspected corpus encoding bug
 
