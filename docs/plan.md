@@ -640,15 +640,31 @@ streams, so they are feasible. Spend the time here only if M5 is done.
       real handset and confirmed; production also measured at 375px with
       `document.body.scrollWidth === clientWidth === 375` (no page-level
       horizontal scroll)
-- [ ] Confirm the GitHub repo is public and contains no `.env.local` — **the
-      `.env.local` half is proved**: `git ls-files` tracks only `.env.example`
-      templates (`sk-...` placeholders), and
+- [x] Confirm the GitHub repo contains no `.env.local` — `git ls-files` tracks
+      only `.env.example` templates (`sk-...` placeholders), and
       `git log --all --full-history -- .env.local` is empty, so it was never
-      committed, not merely absent now. **The public half is not yet done** —
-      `api.github.com/repos/cleogo/cti-product-assistant` still returns 404
+      committed, not merely absent now
+- [ ] **→ carried to M7:** flip the repo to public.
+      `api.github.com/repos/cleogo/cti-product-assistant` returned 404 again at
+      close of M6. Deliberately deferred by the decision below, not missed
 
 **Exit condition:** every rubric requirement R1–R7 verified in production, in a
 clean browser, by someone who is not logged in.
+
+**Exit condition: met 2026-09-22, with R1's repo half carried to M7.**
+`npm run verify:prod` evidences R1–R7 against https://cti-product-assistant.vercel.app/
+in one run: HTTP 200 in 344 ms unauthenticated (R1), 35 timed stream chunks
+(R2), `searchProducts` result at 5,021 ms preceding first text at 7,227 ms
+(R3), 11 source rows with numeric `price_php` (R4), 690,991 bytes of client
+assets grepped clean of every secret (R5), four chips in the served HTML (R6),
+real codes and prices plus a `72`-item filter count (R7). The `FLA-001-13`
+conflict and a stock/delivery refusal were driven in production in a
+session-free browser, and the user ran the layout on a real handset. Verified
+by user.
+
+**The one thing this does not claim:** the GitHub repo is still private, so
+R1's "repo link resolves" half is unproven. It is the first checkbox of M7 and
+a hard prerequisite for submission.
 
 ### R1–R7, and what proved each one
 
@@ -797,7 +813,11 @@ timestamps, not estimated — implementation ran 19:54 to 20:26, with
 clarify/plan before and user verification to 20:32 after. M1's and M2's are
 estimates made after the fact and are probably generous. Measure the rest.
 
-**Running total at the close of M3: ~4 h against an 11 h budget.** M3 came in
+**Running total at the close of M6: ~8 h against an 11 h budget**, leaving the
+1 h M7 budget with ~2 h of slack. Every milestone came in at or under estimate;
+M3's 1.5 h saving was never spent, because M5 used its full 2 h without needing
+it and M6's script-based verification was faster than doing the same checks by
+hand. M3 came in
 1.5 h under. That slack is the inline-citations hedge in M5, or the chunk
 template rewrite — not more M3 tuning.
 

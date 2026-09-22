@@ -46,6 +46,7 @@ npm run dev                          # local dev server
 npm run seed                         # embed corpus into Upstash Vector
 python scripts/build_corpus.py       # regenerate corpus from the xlsx
 npx tsx scripts/query.ts "<query>"   # query the store directly, no UI
+npm run verify:prod                  # re-run the R1-R7 rubric evidence against prod
 ```
 
 ## Environment
