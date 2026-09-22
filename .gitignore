@@ -1,0 +1,31 @@
+# Secrets - never commit
+.env
+.env.local
+.env*.local
+
+# Local alert log from .claude/hooks/notify.ps1
+.claude/notifications.log
+
+# Node
+node_modules/
+npm-debug.log*
+
+# Next.js
+.next/
+out/
+build/
+next-env.d.ts
+
+# Vercel
+.vercel
+
+# Python (corpus build script)
+__pycache__/
+*.pyc
+.venv/
+
+# OS
+Thumbs.db
+desktop.ini
+.DS_Store
+tsconfig.tsbuildinfo

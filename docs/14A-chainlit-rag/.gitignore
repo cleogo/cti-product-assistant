@@ -1,0 +1,10 @@
+.env
+.venv/
+venv/
+__pycache__/
+*.pyc
+.chainlit/translations
+.files/
+*.faiss
+.idea/
+.vscode/

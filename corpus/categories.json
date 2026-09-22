@@ -1,0 +1,351 @@
+{
+  "Medical": {
+    "categories": {
+      "Medical & Clinic Equipment": {
+        "count": 18,
+        "code_groups": [
+          "MED-001"
+        ],
+        "min_price": 60,
+        "max_price": 43470
+      }
+    },
+    "count": 18
+  },
+  "Fire Safety": {
+    "categories": {
+      "Fire Safety Equipment": {
+        "count": 50,
+        "code_groups": [
+          "FIR-001"
+        ],
+        "min_price": 200,
+        "max_price": 63280
+      },
+      "Fire Extinguishers": {
+        "count": 58,
+        "code_groups": [
+          "FIR-002"
+        ],
+        "min_price": 570,
+        "max_price": 44280
+      }
+    },
+    "count": 108
+  },
+  "PPE": {
+    "categories": {
+      "Face & Welding Protection": {
+        "count": 29,
+        "code_groups": [
+          "FAC-001"
+        ],
+        "min_price": 10,
+        "max_price": 3260
+      },
+      "Hearing Protection": {
+        "count": 7,
+        "code_groups": [
+          "EAR-001"
+        ],
+        "min_price": 50,
+        "max_price": 640
+      },
+      "Welding Aprons & Body Protection": {
+        "count": 8,
+        "code_groups": [
+          "BOD-002"
+        ],
+        "min_price": 140,
+        "max_price": 1180
+      },
+      "Safety & Reflective Vests": {
+        "count": 53,
+        "code_groups": [
+          "SAF-001"
+        ],
+        "min_price": 80,
+        "max_price": 2740
+      },
+      "Helmets": {
+        "count": 6,
+        "code_groups": [
+          "HEA-001"
+        ],
+        "min_price": 280,
+        "max_price": 2550
+      },
+      "Hard Hats": {
+        "count": 3,
+        "code_groups": [
+          "HAR-001"
+        ],
+        "min_price": 130,
+        "max_price": 410
+      },
+      "Safety Goggles": {
+        "count": 17,
+        "code_groups": [
+          "GOG-001"
+        ],
+        "min_price": 50,
+        "max_price": 820
+      },
+      "Hand Protection (Gloves)": {
+        "count": 45,
+        "code_groups": [
+          "PPE-005"
+        ],
+        "min_price": 30,
+        "max_price": 2900
+      },
+      "Whistles & Signaling Devices": {
+        "count": 10,
+        "code_groups": [
+          "WHI-001"
+        ],
+        "min_price": 50,
+        "max_price": 180
+      },
+      "Rainwear": {
+        "count": 7,
+        "code_groups": [
+          "RAI-001"
+        ],
+        "min_price": 370,
+        "max_price": 2740
+      }
+    },
+    "count": 185
+  },
+  "Footwear": {
+    "categories": {
+      "Safety Shoes": {
+        "count": 19,
+        "code_groups": [
+          "SAF-002"
+        ],
+        "min_price": 1180,
+        "max_price": 2180
+      },
+      "Work Boots": {
+        "count": 5,
+        "code_groups": [
+          "PPE-018"
+        ],
+        "min_price": 340,
+        "max_price": 1210
+      },
+      "High Cut Safety Shoes": {
+        "count": 4,
+        "code_groups": [
+          "HCS-001"
+        ],
+        "min_price": 1000,
+        "max_price": 1000
+      },
+      "Assorted Safety Footwear": {
+        "count": 3,
+        "code_groups": [
+          "ORD-001"
+        ],
+        "min_price": 460,
+        "max_price": 460
+      },
+      "Low Cut Safety Shoes": {
+        "count": 6,
+        "code_groups": [
+          "LCS-001",
+          "LCS-002"
+        ],
+        "min_price": 1000,
+        "max_price": 2740
+      }
+    },
+    "count": 37
+  },
+  "Sports": {
+    "categories": {
+      "Sports & Martial Arts Equipment": {
+        "count": 37,
+        "code_groups": [
+          "SPO-001"
+        ],
+        "min_price": 80,
+        "max_price": 885830
+      }
+    },
+    "count": 37
+  },
+  "Fall Protection": {
+    "categories": {
+      "Fall Protection Harnesses": {
+        "count": 13,
+        "code_groups": [
+          "BOD-001"
+        ],
+        "min_price": 340,
+        "max_price": 2060
+      },
+      "Fall Protection Lanyards": {
+        "count": 13,
+        "code_groups": [
+          "LAN-001"
+        ],
+        "min_price": 640,
+        "max_price": 6410
+      }
+    },
+    "count": 26
+  },
+  "Equipment": {
+    "categories": {
+      "Megaphones": {
+        "count": 2,
+        "code_groups": [
+          "MEG-001"
+        ],
+        "min_price": 4510,
+        "max_price": 4510
+      },
+      "Vending & Coffee Machines": {
+        "count": 3,
+        "code_groups": [
+          "MAC-001"
+        ],
+        "min_price": 361290,
+        "max_price": 504900
+      },
+      "Flashlights & Headlights": {
+        "count": 6,
+        "code_groups": [
+          "FLA-001"
+        ],
+        "min_price": 170,
+        "max_price": 330
+      },
+      "Portable Toilets": {
+        "count": 2,
+        "code_groups": [
+          "PLT-001"
+        ],
+        "min_price": 9020,
+        "max_price": 120820
+      }
+    },
+    "count": 13
+  },
+  "Janitorial": {
+    "categories": {
+      "Janitorial & Cleaning Equipment": {
+        "count": 151,
+        "code_groups": [
+          "JAN-001"
+        ],
+        "min_price": 190,
+        "max_price": 42900
+      },
+      "Trash Bins & Waste Containers": {
+        "count": 62,
+        "code_groups": [
+          "TRA-001"
+        ],
+        "min_price": 870,
+        "max_price": 29760
+      }
+    },
+    "count": 213
+  },
+  "Rescue": {
+    "categories": {
+      "First Aid Kits": {
+        "count": 5,
+        "code_groups": [
+          "LIF-002"
+        ],
+        "min_price": 650,
+        "max_price": 5800
+      },
+      "Water Rescue & Life Saving": {
+        "count": 24,
+        "code_groups": [
+          "LIF-001"
+        ],
+        "min_price": 300,
+        "max_price": 16270
+      },
+      "Modular Tents": {
+        "count": 2,
+        "code_groups": [
+          "LIF-003"
+        ],
+        "min_price": 3970,
+        "max_price": 3970
+      }
+    },
+    "count": 31
+  },
+  "Furniture": {
+    "categories": {
+      "Pedestals, Cabinets & Storage": {
+        "count": 49,
+        "code_groups": [
+          "FUR-003"
+        ],
+        "min_price": 5320,
+        "max_price": 28340
+      },
+      "Office Chairs & Seating": {
+        "count": 144,
+        "code_groups": [
+          "FUR-002"
+        ],
+        "min_price": 2530,
+        "max_price": 25210
+      },
+      "Office Tables & Desks": {
+        "count": 110,
+        "code_groups": [
+          "FUR-001"
+        ],
+        "min_price": 3520,
+        "max_price": 50950
+      }
+    },
+    "count": 303
+  },
+  "Security": {
+    "categories": {
+      "Barangay Tanod Equipment": {
+        "count": 3,
+        "code_groups": [
+          "TND-001"
+        ],
+        "min_price": 280,
+        "max_price": 450
+      }
+    },
+    "count": 3
+  },
+  "Traffic & Site Safety": {
+    "categories": {
+      "Traffic Cones": {
+        "count": 25,
+        "code_groups": [
+          "PPE-012"
+        ],
+        "min_price": 340,
+        "max_price": 18520
+      },
+      "Barriers, Chains & Warning Tape": {
+        "count": 39,
+        "code_groups": [
+          "PPE-014"
+        ],
+        "min_price": 340,
+        "max_price": 3630
+      }
+    },
+    "count": 64
+  }
+}

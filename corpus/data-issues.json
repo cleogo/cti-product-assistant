@@ -1,0 +1,37 @@
+[
+  {
+    "row": 403,
+    "code": "JAN-001-67-6667",
+    "issue": "missing item name"
+  },
+  {
+    "row": "235, 241",
+    "code": "FIR-002-50LBS-AFFF",
+    "issue": "duplicate code with conflicting data",
+    "detail": "Fire Extinguisher Afff Chemical 50LBS (wheeled Type) @ PHP 8,860 | Fire Extinguisher Hcfc Chemical 50LBS (wheeled Type) @ PHP 28,180"
+  },
+  {
+    "row": "469, 561, 563",
+    "code": "LIF-002-05",
+    "issue": "duplicate code with conflicting data",
+    "detail": "First AID KIT 326 PCS @ PHP 3,260 | Modular Tent (190T) 2.4mx2.4mx1.8m @ PHP 5,800 | Modular Tent (190T) 2.5mx2.5mx1.8m @ PHP 5,800"
+  },
+  {
+    "row": "497, 498",
+    "code": "LIF-001-09",
+    "issue": "duplicate code with conflicting data",
+    "detail": "Rescue Tube (small) @ PHP 3,260 | Rescue Tube (big) @ PHP 3,610"
+  },
+  {
+    "row": "560, 562",
+    "code": "LIF-003-01",
+    "issue": "duplicate code with conflicting data",
+    "detail": "Modular Tent (210D) 2.4mx2.4mx1.8m @ PHP 3,970 | Modular Tent (190T) 2.4mx2.4mx1.8m @ PHP 3,970"
+  },
+  {
+    "row": "874, 949",
+    "code": "FLA-001-13",
+    "issue": "duplicate code with conflicting data",
+    "detail": "Headlight @ PHP 330 | Headlight @ PHP 280"
+  }
+]
