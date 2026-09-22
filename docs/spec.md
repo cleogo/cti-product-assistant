@@ -61,7 +61,23 @@ capabilities entirely, which is why the store choice is free.
 
 Chunks are atomic — one product each — and must not be re-chunked at ingest.
 
-**Metadata carried on every product chunk:** `code`, `code_group`, `name`,
+**Decided M3 (2026-09-22): identical duplicates collapse, conflicting ones do
+not.** Eleven codes appear twice in the masterlist with the same name and price
+(flagged `duplicate_code_identical`, 22 records — see
+`docs/data-quality-report.md` §2). Both tools collapse these to a single item:
+`searchProducts` returns the product once, and `filterProducts` counts it once
+in `total_matching`. The catalog therefore holds **1,027 distinct products**
+across 1,038 records, and `total_matching` is a count of products, not of rows.
+
+The five codes flagged `duplicate_code_conflict` are **never** collapsed — the
+rows disagree on price, and both must reach the model for system-prompt rule 5
+to fire.
+
+De-duplication happens in the tool layer, not at ingest: every record is still
+embedded and stored independently, because a record is a real row and the seed
+must stay a faithful mirror of the corpus.
+
+**Metadata carried on every product chunk:** `id`, `code`, `code_group`, `name`,
 `category`, `department`, `price_php` (integer), `price_band`, `currency`,
 `colors`, `attributes`, `source_row`, and `data_quality_flag` where present.
 
@@ -168,6 +184,36 @@ The model must:
 8. Mention **related items** where the catalog overview documents a buying
    pattern — a harness pairs with a lanyard, a welding mask with gloves and an
    apron.
+
+### Answer format — decided 2026-09-22, after seeing M3's raw output
+
+A multi-item answer renders as a **compact table**: code, the distinguishing
+attribute (size, capacity, colour), price. One sentence of context above it,
+one below. A single-item answer stays a sentence.
+
+```
+CTI carries two fire blanket lines.
+
+| Code | Size | Price |
+|---|---|---|
+| FIR-001-11A | 1.0×1.0 | ₱650.00 |
+| FIR-001-11B | 1.2×1.2 | ₱830.00 |
+| FIR-002-A | 1.2×1.2 | ₱1,050.00 |
+
+The FIR-002 line is priced higher across every size.
+```
+
+**Why.** The placeholder prompt produced numbered lists with every field
+bolded, which reads as shouting and makes a twenty-item price answer
+unscannable. A table lines the prices up so they can be compared, which is the
+actual job.
+
+**Banned phrasings.** No "you can order any of these by quoting the product
+code" — this application quotes list prices and does not take orders (see
+Non-goal). No bolding of whole lines.
+
+*Consequence for M5:* a wide table must sit in its own horizontally scrolling
+container at 375px, or it breaks the mobile layout.
 
 ---
 

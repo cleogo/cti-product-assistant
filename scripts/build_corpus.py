@@ -317,7 +317,9 @@ def main():
 
     # products.json is imported directly by the filterProducts tool, so it
     # carries only the fields that tool needs -- not the embedded text.
-    filter_fields = ("code", "name", "category", "department", "price_php",
+    # "id" is what the hybrid merge de-duplicates on -- "code" is not unique
+    # (five codes carry conflicting rows), so it cannot serve as the key.
+    filter_fields = ("id", "code", "name", "category", "department", "price_php",
                      "price_band", "colors", "attributes")
     (OUT / "products.json").write_text(
         json.dumps([{k: r[k] for k in filter_fields} | (

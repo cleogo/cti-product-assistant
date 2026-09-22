@@ -216,6 +216,85 @@ Starting points, to be tuned against real questions:
 - **Guide documents chunked by section heading**, so a retrieved guide chunk is
   a complete self-contained explanation.
 
+**Settled at seed time (M2): h2 only, not every heading level.** The four guide
+documents yield **20** chunks, not the ~32 a `grep "^##"` count suggests — that
+count also matches the `###` subsections nested under
+`03-catalog-overview.md`'s two h2 sections. Splitting on h3 as well would emit
+one chunk per department, each too thin to answer "what do you sell" on its
+own. Folding each department's h3 into its parent h2 keeps the overview
+retrievable as a whole, which is what the question shape needs.
+
+Seeded store composition: **1,038 product vectors + 20 guide vectors = 1,058**,
+in one index. Guide chunks carry `doc_type: "guide"`; product chunks carry the
+full product record as metadata, `price_php` numeric.
+
+### Tuned in M3, against the demo question set
+
+Four changes, each made because a specific question failed. Measured with
+`scripts/eval.ts`, which runs the demo set through the tools with no model in
+the loop.
+
+**1. Over-fetch the candidate set: topK 150, truncated client-side.** This is
+the big one, and it was not a tuning problem — it was a correctness bug hiding
+as one. Upstash's approximate search has bad recall at small topK on this
+index:
+
+| Query | topK 12 | topK 20 | topK 100 |
+|---|---|---|---|
+| "fire blanket" | 5 Tower Locker, 0.639 | Fire Blanket, 0.824 | Fire Blanket, 0.824 |
+| "What does WITH OSHC mean?" | an office workstation, 0.598 | same | the OSHC guide, 0.781 |
+
+The fire blanket's true score is **0.824** and the locker's is **0.639** —
+verified by fetching both vectors and computing the cosine by hand. At topK 12
+the store simply never visits the blanket. The spec's topK of 12 was chosen as
+a *result count*; it turns out to also be the ANN candidate budget, and at that
+setting the index misses items scoring 0.19 higher than what it returns.
+
+So the store is now queried at a fixed topK 150 and the result truncated to the
+caller's limit. The caller's `limit` still means "how many results", which is
+what it was always meant to mean. Cost: one larger response, ~1s per query.
+
+*Why this is worth a paragraph in the reflection:* the retrieval looked
+plausibly-wrong rather than obviously-broken. Lockers for "fire blanket" reads
+like a weak embedding, and the obvious response is to blame the chunk template
+and start rewriting it. The scores are what gave it away — every wrong answer
+came back in a narrow 0.63–0.64 band, which is what a candidate set that never
+reached the right neighbourhood looks like.
+
+**2. A second, filtered query for guide documents.** Guide chunks lose every
+slot to products even at topK 150. There are 1,038 product chunks to 20 guide
+chunks, and every product chunk contains the sentence "Product code X, also
+written..." — which competes directly with the one document explaining what a
+product code is. A separate query with `filter: "doc_type = 'guide'"` and
+topK 3 makes conceptual questions reliable. Guides score 0.74–0.81 on
+conceptual questions and at most 0.63 on a product lookup, so a **0.70 floor**
+keeps prose out of a price answer.
+
+**3. Name containment, not just exact name match.** "What's the price of a dual
+head stethoscope?" normalizes to a token set that does not equal
+`Stethoscope (Dual Head)`, so the exact-name half of the hybrid merge never
+fired and the question fell through to vector search — which answered with
+barstools. A product now counts as an exact match when **every word of its name
+appears in the question**. Restricted to names of two or more words; a
+one-word name matches too loosely to trust.
+
+**4. Variant siblings inherit their trigger's score.** The first merge put all
+non-semantic matches ahead of all semantic ones, which let a variant sibling
+pulled in at 0.689 outrank the true answer at 0.865. Siblings now carry the
+score of the hit that pulled them in, minus an epsilon, so a family lands
+beside its member instead of on top of the results. Exact code and name
+matches are the only hits that ignore score entirely.
+
+**Still weak, knowingly.** Beyond the top hit, results for a specific product
+query are close to noise — "dual head stethoscope" returns whistles and
+stanchions at 0.690–0.695 behind the correct answer at 0.980. The chunk
+template is the cause: roughly 80% of each chunk is boilerplate (the price in
+digits and in words, the code in three spellings, the category sentence), so
+1,038 chunks look much alike to the embedder and their scores bunch in a narrow
+band. Rewriting the template to lead with the product name would likely fix it
+and would cost a full re-seed. Not done — the exact-match layer already carries
+the lookups, and the milestone's exit condition is four categories passing.
+
 ---
 
 ## 10. Data quality found in the source

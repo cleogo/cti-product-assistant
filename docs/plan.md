@@ -26,13 +26,17 @@ Get an empty app public before there is anything to break.
 - [x] `.env.local` from `.env.example`: `OPENAI_API_KEY`,
       `UPSTASH_VECTOR_REST_URL`, `UPSTASH_VECTOR_REST_TOKEN`; confirm
       `.gitignore` covers it
-- [ ] Add the **same three** env var names to Vercel project settings
-- [ ] Deploy to Vercel — the starter runs unmodified against the sample corpus,
+- [x] Add the **same three** env var names to Vercel project settings
+- [x] Deploy to Vercel — the starter runs unmodified against the sample corpus,
       which is the point: prove the pipeline before changing it
 
 **Exit condition:** a public Vercel URL loads without error, the starter's
 sample-PDF chat answers one question in production, and `git log` shows the
 corpus committed.
+
+**Exit condition: met 2026-09-22.** https://cti-product-assistant.vercel.app/
+loads without error, the smoke-seeded 20-product chat answered a question in
+production, and `git log` shows the corpus committed. Verified by user.
 
 **Why prove the pipeline before changing it.** It costs five minutes and it
 separates two failure classes. If a trivial seed works in production and the
@@ -159,17 +163,19 @@ not just from localhost.
 Rewrite the starter's `lib/seed.ts`. Keep its shape — `embedMany`, batched
 `index.upsert`, deterministic ids — and replace its input.
 
-- [ ] Strip the PDF pipeline out of `lib/seed.ts`: no `pdf-parse`, no
+- [x] Strip the PDF pipeline out of `lib/seed.ts`: no `pdf-parse`, no
       `chunkText`, no 800-char windows. Our chunks already exist
-- [ ] Read `corpus/products.jsonl`; embed the `text` field; upsert with `id`
+- [x] Read `corpus/products.jsonl`; embed the `text` field; upsert with `id`
       from the record and **all** other fields as metadata
-- [ ] Extend it to chunk `corpus/guide/*.md` by `##` heading, tagged
+- [x] Extend it to chunk `corpus/guide/*.md` by `##` heading, tagged
       `doc_type: "guide"`
-- [ ] Batch the embedding calls and handle throttling — see below
-- [ ] Seed 50 records first and inspect them in the store before the full run
-- [ ] Full seed — 1,038 products plus guide chunks
-- [ ] Delete `data/sample.pdf` and drop `pdf-parse` from `package.json`
-- [ ] Write `scripts/query.ts`, a throwaway CLI that queries the store directly
+- [x] Batch the embedding calls and handle throttling — see below
+- [x] Seed 50 records first and inspect them in the store before the full run
+- [x] Full seed — 1,038 products plus guide chunks
+- [x] Delete `data/sample.pdf` and drop `pdf-parse` from `package.json`
+      (no-op — both already gone since M1; `scripts/smoke-seed.ts` and the
+      `smoke-seed` npm script deleted instead, per its own docstring)
+- [x] Write `scripts/query.ts`, a throwaway CLI that queries the store directly
 
 No keyword index step — exact matching runs against `products.json` in
 process. See M1.
@@ -181,6 +187,30 @@ matches 1,038 plus guide chunks.
 **Watch for:** metadata silently dropped on write — a named failure mode
 (missing metadata gives an empty sources panel later). Verify `price_php` is
 stored as a number, not a string, or `filterProducts` comparisons will fail.
+
+**Exit condition: met 2026-09-22.** `npx tsx scripts/query.ts "stethoscope"`
+returned `MED-001-04` first with `price_php: 2100` as a number and metadata
+intact. Full seed ran without throttling — 1,038 products + 20 guide chunks =
+1,058 vectors, confirmed via `index.info()`. Verified by user.
+
+**Surprise:** guide docs have only 20 true `##` (h2) sections, not the ~32 a
+naive `grep "^##"` count suggests — that count also matches `###` (h3)
+subsections nested under `03-catalog-overview.md`'s two h2 sections
+("Departments", "Cross-department buying patterns"). Chunking on h2 only is
+correct per spec and folds each department's h3 into its parent chunk, which
+reads as intended.
+
+**Surprise:** querying "stethoscope" also surfaced `WHI-001-07B` and
+`WHI-001-01` each returned twice, tagged `duplicate_code_identical` (not
+`duplicate_code_conflict`) — a source-data flag distinct from the five
+conflicting-price codes, meaning two rows share a code with identical data
+rather than disagreeing data. Not a seeding bug; both rows are embedded
+independently because each is a real record. `docs/data-quality-report.md`
+§2 already covers it — 11 such codes, harmless for correctness but they
+duplicate search results. Noted here because it is the first time the flag
+showed up as *visible behaviour* rather than a row in a report: M5's sources
+panel will show the same product twice unless the cards de-duplicate on
+`code` + `price_php`.
 
 ### Seeding at scale: batch and retry
 
@@ -207,14 +237,19 @@ content comes from.
 
 Replace the starter's single `getInformation` tool in `app/api/chat/route.ts`.
 
-- [ ] Implement `searchProducts` per spec — Upstash vector query, then merge
+- [x] Implement `searchProducts` per spec — Upstash vector query, then merge
       exact `code`/`name` hits from the in-memory array ahead of them
-- [ ] Implement `filterProducts` against the in-memory array, with
+      (`lib/retrieval.ts`, over `lib/products.ts`)
+- [x] Implement `filterProducts` against the in-memory array, with
       `total_matching`
-- [ ] Run the full demo-question set from `docs/reflection-outline.md` through
-      the query CLI
-- [ ] Tune topK, hybrid merge weighting, and the chunk template against failures
-- [ ] Record what was tuned and why in `docs/corpus-design-decisions.md`
+- [x] Run the full demo-question set from `docs/reflection-outline.md` through
+      a harness — `scripts/eval.ts`, not the query CLI; the CLI only talks to
+      the vector store and cannot exercise `filterProducts` at all
+- [x] Tune topK and hybrid merge weighting against failures. **The chunk
+      template was deliberately not touched** — see below
+- [x] Record what was tuned and why in `docs/corpus-design-decisions.md`
+- [x] Wire both tools into `app/api/chat/route.ts`, replacing `getInformation`
+      (descriptions and system prompt are M4's job)
 
 **Exit condition:** all four question categories pass —
 
@@ -229,6 +264,66 @@ Replace the starter's single `getInformation` tool in `app/api/chat/route.ts`.
 families were returning partial" is exactly the kind of specific the reflection
 needs, and it is unrecoverable after the fact.
 
+**Exit condition: met 2026-09-22.** `npx tsx scripts/eval.ts` reports 13
+passed, 0 failed, covering all four exit categories — exact lookup
+(`MED-001-01` and "dual head stethoscope" first), variant family (all five
+`FIR-001-11A–E`), filter/aggregate (sub-₱500 only, with correct
+`total_matching`), and the `FLA-001-13` conflict flag — plus the conceptual
+questions. The user additionally drove the running app against four demo
+questions: retrieval was correct in all four. Verified by user.
+
+**Retrieval is correct; the model is not.** That split is the useful result of
+M3 and the reason the plan ordered it headless. All four app questions
+retrieved the right chunks and all four answers were wrong — a collapsed
+variant list, a missing `total_matching`, a price quoted on a conflicted code,
+and a code-scheme explanation that read as reasoned rather than retrieved.
+None of those are retrieval bugs, and none would have been separable from
+retrieval bugs if the UI had been built first. They are M4's target list below.
+
+### The surprise of M3: topK is the candidate budget, not the result count
+
+The milestone's real failure was not a tuning miss. Asked for "fire blanket"
+at topK 12, Upstash returned **lockers** — and the fire blanket, whose true
+cosine score is 0.824 against the locker's 0.639, was not in the result set at
+all. It appears the moment topK reaches 20. The guide documents need topK 100.
+
+The spec set topK 12 as *how many results to return*. It is also the
+approximate-search candidate budget, and at 12 this index misses items scoring
+0.19 higher than what it returns. Fixed by over-fetching at a fixed topK 150
+and truncating client-side. Full measurements in
+`docs/corpus-design-decisions.md` §9.
+
+What made this expensive to find is that it looked like an ordinary embedding
+weakness. Lockers for "fire blanket" is exactly what a bad chunk template
+produces, and the obvious next move — rewrite the template, re-seed — would
+have cost an hour and fixed nothing. The tell was that every wrong answer came
+back in a narrow 0.63–0.64 band. Confirming it meant fetching the stored
+vectors and computing the cosine by hand, which is worth doing once: it
+separates "the embedding disagrees with me" from "the search never looked".
+
+### Surprise: fire blankets exist twice, under two code groups — and it bites
+
+*(Confirmed live during M3 verification: the model quoted the dearer of two
+same-size blankets and hid the cheaper. See M4's target list below.)*
+
+`FIR-001-11A–E` and `FIR-002-A–D` are both fire blankets in overlapping sizes
+at different prices — a 1.2×1.2 is ₱830 as `FIR-001-11B` and ₱1,050 as
+`FIR-002-A`. Not a data-quality flag; two genuine product lines. The exit
+condition only asked for the five `FIR-001-11` blankets, and they are returned,
+but M4's system prompt rule 4 ("list variants with prices rather than picking
+one") now has a harder case than expected: the honest answer presents two
+families, not one list.
+
+### Deliberately not done: rewriting the chunk template
+
+Roughly 80% of each product chunk is boilerplate — the price in digits and in
+words, the code in three spellings, a category sentence. That is why scores
+bunch: beyond the top hit, a product query returns near-noise. Leading with the
+product name would likely fix it and costs a full re-seed. The exact-match
+layer already carries the lookups and all four categories pass, so this is
+logged rather than chased. It is the strongest candidate if M5 or M6 comes in
+under budget.
+
 ---
 
 ## M4 — Grounded answers
@@ -236,7 +331,8 @@ needs, and it is unrecoverable after the fact.
 Wire the model to the tools. Still no UI — drive it from a script or the
 starter's raw API route.
 
-- [ ] Write the system prompt against the eight rules in the spec
+- [ ] Write the system prompt against the eight rules in the spec, plus the
+      answer-format contract (compact table) decided at the end of M3
 - [ ] Write both tool descriptions; make the search/filter boundary explicit
 - [ ] Test routing: does "under ₱500" call `filterProducts` and not
       `searchProducts`?
@@ -247,6 +343,23 @@ starter's raw API route.
 **Exit condition:** the grounding questions from `docs/reflection-outline.md`
 all behave — refusals refuse, the conflict warns, and no invented prices appear
 in ten consecutive varied questions.
+
+### M4's target list, observed 2026-09-22 with M3's placeholder prompt
+
+The user drove the running app against four demo questions while verifying M3.
+Retrieval was correct in all four; the model was wrong in all four. These are
+real observed failures, not hypotheticals — fix these and M4 is done.
+
+| Question | What the model did | What it must do |
+|---|---|---|
+| "What sizes do fire blankets come in?" | Collapsed the 9 retrieved blankets to 6 rows — one per distinct size — and picked a single price where the two product lines overlap. **For 1.8×1.8 it showed `FIR-002-D` at ₱1,440 and hid `FIR-001-11E` at ₱1,000**, a 44% overquote on a size we sell cheaper. It picked the cheaper option on the two rows above it, so this is arbitrary, not a rule | Rule 4: list every variant. Where two lines carry the same size, both rows appear. Never substitute one price for another of equal size |
+| "Safety equipment under ₱500?" | Listed 20 items as though that were all of them; never mentioned `total_matching` | "214 items match — here are the 20 cheapest" |
+| "How much is FLA-001-13?" | Quoted ₱330 as the price, then mentioned ₱280 as an aside | Rule 5: warn that the masterlist conflicts, refer to the sales team, pick neither |
+| "How do your product codes work?" | Explained the code scheme in general terms — "FLA for flashlights", "13 is a specific identifier" — reading as reasoned rather than retrieved | Answer from `01`/`02` guide sections only. **Verify against the guide text**; this one may be partly invented |
+
+Also observed: the model closed two answers with "you can order any of these by
+quoting the respective product codes." This application does not take orders.
+Banned phrasing, recorded in `docs/spec.md`.
 
 **Watch for:** a vague tool description causing general-knowledge answers. This
 is named in the brief. If the model answers a product question without calling
@@ -354,14 +467,23 @@ deployment and the reflection, which are the graded deliverables.
 
 | Milestone | Budget | Cap |
 |---|---|---|
-| M1 — Skeleton, deployed | 1.5 h | Stop at 2 h; a store that won't provision is a store to swap, not debug |
-| M2 — Corpus seeded | 1.5 h | — |
-| M3 — Retrieval correct | 2.5 h | **Hard stop at 3 h.** Log what is still imperfect and move on — unresolved failures are reflection material, not blockers |
+| M1 — Skeleton, deployed | 1.5 h (actual: ~1.5 h) | Stop at 2 h; a store that won't provision is a store to swap, not debug |
+| M2 — Corpus seeded | 1.5 h (actual: ~1.5 h) | — |
+| M3 — Retrieval correct | 2.5 h (actual: ~1 h incl. verification) | **Hard stop at 3 h.** Log what is still imperfect and move on — unresolved failures are reflection material, not blockers |
 | M4 — Grounded answers | 1.5 h | — |
 | M5 — Product surface | 2 h | Inline citations only if this comes in under budget |
 | M6 — Public and verified | 1 h | — |
 | M7 — Submission | 1 h | — |
 | | **11 h** | |
+
+**On the actuals in this table.** M3's figure is measured from file
+timestamps, not estimated — implementation ran 19:54 to 20:26, with
+clarify/plan before and user verification to 20:32 after. M1's and M2's are
+estimates made after the fact and are probably generous. Measure the rest.
+
+**Running total at the close of M3: ~4 h against an 11 h budget.** M3 came in
+1.5 h under. That slack is the inline-citations hedge in M5, or the chunk
+template rewrite — not more M3 tuning.
 
 **The trap:** M3 feels productive because every tweak shows a visible change in
 retrieval results. It is the milestone most likely to consume a whole day. The
