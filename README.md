@@ -45,6 +45,21 @@ to say so rather than guess.
   mobile layout — tables scroll inside their own container instead of
   breaking the page.
 
+## A note on the corpus: a spreadsheet, not PDFs
+
+The course starter ingests PDFs and attaches a page number to each chunk. This
+project replaces that with a price masterlist, and the metadata is product
+code, category, department, price band, colours and a data-quality flag rather
+than a page number — a deliberate swap, not an omission. A page number is a
+*locator* for prose; for a catalog row the locator is the product code, and it
+is what every answer quotes.
+
+The trade that matters: **each record is one atomic product and is never
+re-chunked.** Splitting a row would separate a name from its price, which is
+the fastest way to quote a real price for the wrong item. Chunk size here is
+therefore a property of the data, not a tuning knob — the reasoning is in
+[`docs/corpus-design-decisions.md`](docs/corpus-design-decisions.md).
+
 ## Stack
 
 - **Next.js 15** (App Router) + **TypeScript**, **Vercel AI SDK v4**
