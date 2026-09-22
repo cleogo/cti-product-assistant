@@ -757,15 +757,90 @@ depends on it.
 
 - [ ] **Flip the repo to public** — carried from M6, where it was deliberately
       deferred. `npm run verify:prod` must show `REPO ... private: false`
-      before anything is submitted; a 404 on the submitted link fails R1
-- [ ] Write the one-page reflection from `docs/reflection-outline.md`, using
-      what actually broke in M3 and M4 — **one page is ~500 words**
-- [ ] Export the reflection to PDF
-- [ ] Finalize the demo questions that hold up in production
-- [ ] Write the stretch-goals summary — hybrid retrieval, suggested-prompt chips
-- [ ] Submit: deployed URL, repo link, reflection PDF, demo questions
+      before anything is submitted; a 404 on the submitted link fails R1.
+      **Still 404 to an anonymous client at the end of M7 implementation** —
+      this is a GitHub account action, no credential for it exists here, and
+      it is the first item in `submission/SUBMIT.md`
+- [x] Write the one-page reflection from `docs/reflection-outline.md`, using
+      what actually broke in M3 and M4 — **one page is ~500 words**.
+      `submission/reflection.md`, 537 words, thesis-led
+- [x] Export the reflection to PDF — `submission/reflection.pdf`, A4
+      (595×842 pt), `/Count 1`, printed from `reflection.html` by headless
+      Edge. Chrome paginates rather than clips, so one page object is proof
+      nothing was cut off the bottom
+- [x] Finalize the demo questions that hold up in production — all 16
+      candidates driven against the live URL by `npm run demo:check`; 16/16
+      clean, verbatim answers in `submission/demo-transcript.md`, written up
+      in `submission/demo-questions.md`
+- [x] Write the stretch-goals summary — hybrid retrieval, suggested-prompt
+      chips: `submission/stretch-goals.md`, each with production evidence
+- [ ] Submit: deployed URL, repo link, reflection PDF, demo questions —
+      checklist at `submission/SUBMIT.md`
 
 **Exit condition:** submitted.
+
+### Decided at the top of M7 (2026-09-22)
+
+**The reflection, the stretch-goals summary and the demo questions stay out of
+the repo.** They are submission artefacts, not project documentation. They are
+written to a gitignored `submission/` directory, so they exist locally for the
+user to attach and never appear at the public repo link. The repo's own
+`README.md` and `docs/` already carry the engineering story a facilitator would
+open the repo to read; duplicating the graded prose there adds nothing and
+couples a resubmission to a git push.
+
+**Author line: Go, Maria Cleozella D.** The git author on this repo is "CTI
+Product Assistant", which is fine for commits and wrong for a graded PDF.
+
+**Demo questions are re-run against production, not inherited from M4.**
+`scripts/grade.ts` scored them locally against the real model at M4, before the
+M5 surface and the M6 deploy existed. "Questions that hold up in production" is
+a claim about the deployed app, so it gets measured against the deployed app.
+That script is the one piece of *code* in M7; everything else is prose.
+
+### The surprise of M7: the demo questions were all clean, and one number was not
+
+Sixteen questions, 16/16 mechanically clean on the first production run — right
+tool, right codes, numeric prices, refusals where refusals were due. That was
+the opposite of the expected outcome and made the mechanical check feel
+redundant. It was not. Reading the answers as a *customer* rather than as a
+harness turned up the one thing the checker could not see: the app reports
+**214 items under ₱500**, and a hand count over `corpus/products.json` gives
+**218**.
+
+Both are right. `filterProducts` scans `CATALOG`, which has already collapsed
+the identical-duplicate rows — 1,027 records, not the corpus's 1,038. The bug
+was in a *comment* in `lib/retrieval.ts` that had been quoting 218 since it was
+written, counted off the raw file against a function that can never return that
+number. Fixed, with the reason recorded next to it.
+
+The general lesson, and the one worth carrying past this assignment: **a
+passing automated check licenses you to stop looking, which is exactly when the
+quiet wrong numbers survive.** The harness asked "did the right tool run and
+did it return rows?" Nobody had asked "is the headline figure the answer
+actually states true?" — and that is the only number a customer would repeat.
+
+A related honesty note now written into `submission/demo-questions.md`: the 214
+counts *every* catalog item under ₱500, not only safety items. "Safety
+equipment" is not one of the twelve departments and the tool description
+forbids guessing one, because a guessed department silently shrinks the total
+and yields a confidently wrong count. The answer inherits the asker's wording.
+That is a deliberate trade, and it is better to document it than to let a
+marker find it.
+
+### The deliverables stay out of the repo
+
+Decided at the top of M7 and worth restating because it is easy to undo by
+reflex: `submission/` is gitignored. The reflection, the PDF, the demo
+questions and the stretch-goals summary are graded artefacts belonging to the
+student, not documentation belonging to the project. The repo's `README.md`
+and `docs/` already carry the engineering story; duplicating the graded prose
+there would add nothing and would couple a resubmission to a git push.
+
+**PDF is produced by headless Edge printing an HTML file**, not by a Python PDF
+library. Neither `reportlab` nor `pandoc` is installed and the machine already
+has Edge and Chrome — `msedge --headless --print-to-pdf` gives real CSS
+typography and a controllable single page with no new dependency.
 
 ### The reflection is one page — roughly 500 words
 
@@ -805,7 +880,7 @@ deployment and the reflection, which are the graded deliverables.
 | M4 — Grounded answers | 1.5 h (actual: ~1 h) | — |
 | M5 — Product surface | 2 h (actual: ~2 h) | Inline citations only if this comes in under budget — not built, budget fully used |
 | M6 — Public and verified | 1 h (actual: ~1 h) | — |
-| M7 — Submission | 1 h | — |
+| M7 — Submission | 1 h (actual: ~1 h, excluding the repo flip and the submission itself) | — |
 | | **11 h** | |
 
 **On the actuals in this table.** M3's figure is measured from file

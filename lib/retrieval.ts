@@ -289,9 +289,14 @@ export function filterProducts({
     return true;
   });
 
-  // Default price_asc: with 218 items under PHP 500 and a limit of 50, an
+  // Default price_asc: with 214 items under PHP 500 and a limit of 50, an
   // unordered result truncates arbitrarily, which is what this tool exists to
   // prevent.
+  //
+  // 214, not 218: the count is over CATALOG, which has already collapsed the
+  // identical-duplicate rows, so it is 1,027 records and not the corpus's
+  // 1,038. Verified against production in M7. Counting the raw file gives a
+  // number the tool will never return.
   const order = sort ?? 'price_asc';
   const sorted = [...matches].sort((a, b) => {
     if (order === 'price_desc') return b.price_php - a.price_php;
