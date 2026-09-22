@@ -1,16 +1,28 @@
 'use client';
 
 import { useChat } from '@ai-sdk/react';
-
-type Source = { text?: string; page?: number; score?: number };
+import { ChatMessage } from './components/ChatMessage';
+import { EmptyState } from './components/EmptyState';
+import { SourcesPanel } from './components/SourcesPanel';
+import { sourcesFromMessage } from '@/lib/sources';
 
 export default function Page() {
-  const { messages, input, handleInputChange, handleSubmit, status, error } = useChat({
-    api: '/api/chat',
-  });
+  const { messages, input, handleInputChange, handleSubmit, append, status, error, stop } =
+    useChat({ api: '/api/chat' });
+
+  const isBusy = status === 'streaming' || status === 'submitted';
+
+  // Latest assistant turn's sources, for the desktop panel — see
+  // SourcesPanel.tsx for why only the latest turn.
+  const lastAssistant = [...messages].reverse().find((m) => m.role === 'assistant');
+  const panelSources = lastAssistant ? sourcesFromMessage(lastAssistant) : [];
+
+  function askChip(prompt: string) {
+    append({ role: 'user', content: prompt });
+  }
 
   return (
-    <main className="mx-auto max-w-3xl p-6">
+    <main className="mx-auto max-w-5xl p-6">
       <header className="mb-6">
         <h1 className="text-2xl font-bold text-slate-900">CTI Product Assistant</h1>
         <p className="text-sm text-slate-500">
@@ -18,85 +30,53 @@ export default function Page() {
         </p>
       </header>
 
-      <ul className="space-y-4 mb-6 min-h-[200px]">
-        {messages.map((m) => (
-          <li
-            key={m.id}
-            className={
-              m.role === 'user'
-                ? 'flex justify-end'
-                : 'flex justify-start flex-col items-start'
-            }
-          >
-            <span
-              className={
-                m.role === 'user'
-                  ? 'inline-block rounded-2xl bg-cyan-600 text-white px-4 py-2 max-w-[85%]'
-                  : 'inline-block rounded-2xl bg-white border border-slate-200 px-4 py-2 max-w-[85%]'
-              }
-            >
-              {m.content}
-            </span>
-
-            {m.role === 'assistant' &&
-              m.toolInvocations?.map(
-                (inv) =>
-                  inv.state === 'result' &&
-                  inv.toolName === 'getInformation' && (
-                    <details
-                      key={inv.toolCallId}
-                      className="mt-2 text-sm text-slate-600 max-w-[85%]"
-                    >
-                      <summary className="cursor-pointer">
-                        Sources ({(inv.result as Source[]).length})
-                      </summary>
-                      <ul className="mt-2 space-y-2">
-                        {(inv.result as Source[]).map((src, i) => (
-                          <li
-                            key={i}
-                            className="border-l-2 border-cyan-500 pl-3"
-                          >
-                            <span className="text-xs text-slate-400">
-                              page {src.page ?? '?'} · score{' '}
-                              {typeof src.score === 'number'
-                                ? src.score.toFixed(2)
-                                : '—'}
-                            </span>
-                            <p>{src.text}</p>
-                          </li>
-                        ))}
-                      </ul>
-                    </details>
-                  ),
+      <div className="flex gap-6">
+        <div className="min-w-0 flex-1">
+          {messages.length === 0 ? (
+            <EmptyState onPick={askChip} />
+          ) : (
+            <ul className="mb-6 min-h-[200px] space-y-4">
+              {messages.map((m) => (
+                <ChatMessage key={m.id} message={m} />
+              ))}
+              {error && (
+                <li className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+                  Something went wrong answering that — try again.
+                </li>
               )}
-          </li>
-        ))}
-        {status === 'streaming' && (
-          <li className="text-sm text-slate-400">…</li>
-        )}
-        {error && (
-          <li className="text-sm text-rose-600">
-            Error: {error.message}
-          </li>
-        )}
-      </ul>
+            </ul>
+          )}
 
-      <form onSubmit={handleSubmit} className="flex gap-2">
-        <input
-          value={input}
-          onChange={handleInputChange}
-          className="flex-1 border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:border-cyan-500"
-          placeholder="Ask about a product, a price, or what's under ₱500…"
-          disabled={status === 'streaming' || status === 'submitted'}
-        />
-        <button
-          type="submit"
-          disabled={!input || status === 'streaming' || status === 'submitted'}
-          className="rounded-lg bg-slate-900 text-white px-4 py-2 disabled:opacity-40"
-        >
-          Send
-        </button>
-      </form>
+          <form onSubmit={handleSubmit} className="flex gap-2">
+            <input
+              value={input}
+              onChange={handleInputChange}
+              className="min-w-0 flex-1 rounded-lg border border-slate-300 px-3 py-2 focus:border-cyan-500 focus:outline-none"
+              placeholder="Ask about a product, a price, or what's under ₱500…"
+              disabled={isBusy}
+            />
+            {isBusy ? (
+              <button
+                type="button"
+                onClick={stop}
+                className="rounded-lg bg-slate-200 px-4 py-2 text-slate-700 hover:bg-slate-300"
+              >
+                Stop
+              </button>
+            ) : (
+              <button
+                type="submit"
+                disabled={!input}
+                className="rounded-lg bg-slate-900 px-4 py-2 text-white disabled:opacity-40"
+              >
+                Send
+              </button>
+            )}
+          </form>
+        </div>
+
+        {messages.length > 0 && <SourcesPanel sources={panelSources} />}
+      </div>
     </main>
   );
 }

@@ -500,22 +500,111 @@ behaviour the spec asks for. That deferred question is answered: **the starter
 gets it right by construction.** The work here is the card content and the
 chrome, not the mechanism.
 
-- [ ] Streaming chat (R2) — starter provides; verify it survives our changes
-- [ ] Tool-call status visible while retrieval runs (`state === 'call'`)
-- [ ] Sources panel — product cards, price rendered from `price_php` metadata
-- [ ] Sources populate when retrieval completes, before the text finishes
-      streaming (see spec — do not defer to message completion)
-- [ ] Decide the two remaining streaming questions: multi-tool source grouping
-      (a turn may call both tools — the starter maps over `toolInvocations`, so
-      decide whether they merge or stay separate) and stop/abort. Mid-stream
-      tool failure surfaces through the starter's `error` render
-- [ ] Guide sources render as title plus section, distinct from product cards
-- [ ] Empty state with the four suggested-prompt chips (R6)
-- [ ] Mobile layout at 375px, sources collapsing below chat
-- [ ] Loading and error states
+### Decided in M5 (2026-09-22): sources render per-message on mobile, panel-only on desktop
+
+The starter renders sources under each answer, which the spec's "sources
+panel" wording could be read as replacing with something that sits beside the
+chat. First built as **both, on every viewport, no duplication of logic** —
+the current turn's sources mirrored into a panel on wide screens while every
+message kept its own copy underneath, so scrolling to an earlier answer still
+showed what it was grounded on.
+
+**Revised, on request, to panel-only on desktop:** the per-message copy is now
+hidden at the `lg` breakpoint (`ChatMessage.tsx`), so the desktop panel is the
+sole sources display there and nothing is shown twice. Accepted trade-off,
+stated and confirmed before making the change: **on desktop, an earlier
+answer's sources are not visible anywhere once a later turn has run** — the
+panel only ever mirrors the latest turn, and there is no per-message fallback
+above `lg` any more. Below `lg` there is no panel, so the per-message list is
+still the only sources display on mobile, unchanged.
+
+This is a narrower reading of the milestone's own exit condition ("every
+answer shows its sources") than the first build satisfied — true only for the
+current turn on desktop, still true for every turn on mobile. Logged here
+because it is a real scope narrowing, not an implementation detail.
+
+`getInformation`'s old `{text, page, score}` shape and its
+`toolName === 'getInformation'` render guard are removed — the tool doesn't
+exist. Every toolInvocation from `searchProducts` or `filterProducts` is
+mapped fresh.
+
+- [x] Streaming chat (R2) — starter provides; verified it survives our changes
+- [x] Tool-call status visible while retrieval runs (`state === 'call'`) —
+      `ChatMessage.tsx`, watched live: "Searching products…" / "Filtering the
+      catalog…" render before the table streams in
+- [x] Sources panel — product cards, price rendered from `price_php` metadata
+      (`SourceCard.tsx`, `lib/sources.ts`) — never from message text
+- [x] Sources populate when retrieval completes, before the text finishes
+      streaming (see spec — do not defer to message completion) — unchanged
+      starter mechanism, still true with the new tools
+- [x] Decided: multi-tool source grouping merges into one deduped list
+      (`lib/sources.ts` — products by code, guide sections by title+heading, one
+      function shared by the inline list and the panel so they can't diverge).
+      Stop/abort: a Stop button calls `useChat`'s `stop()` while streaming.
+      Mid-stream tool failure surfaces through the starter's `error` render,
+      now styled instead of unstyled text
+- [x] Guide sources render as title plus section, distinct from product cards
+      — amber card, no code, no price; watched live on "What does WITH OSHC
+      mean…" (`SourceCard.tsx`)
+- [x] Empty state with the four suggested-prompt chips (R6) — `EmptyState.tsx`,
+      clicking a chip submits it immediately via `append`
+- [x] Mobile layout at 375px — verified via DOM measurement at exactly 375px:
+      `document.body.scrollWidth === clientWidth` (no page-level horizontal
+      scroll) and the desktop panel is `display: none`. Sources are the
+      per-message list, already below the chat by construction
+- [x] Loading and error states — the `…` placeholder while no tool is running yet
+      and no text has streamed; the error banner restyled from raw text
 
 **Exit condition:** a stranger can use it without instructions, every answer
 shows its sources, and the sources panel is never empty on a retrieval answer.
+
+### The surprise of M5: the sources panel decision needed a correction mid-build
+
+The clarify-step decision ("panel on desktop, inline on mobile") sounded right
+until it was half-built: gating the per-message sources with `lg:hidden` would
+have hidden every earlier answer's sources on desktop once a panel existed,
+satisfying only the *latest* turn — which directly breaks this milestone's own
+exit condition, "every answer shows its sources." Corrected before finishing
+the component: per-message sources render on every viewport, unconditionally;
+the desktop panel is an additional convenience mirroring the latest turn, not
+a replacement for the inline copy. Worth naming because the wrong version
+would have looked identical to the right one on the exact scenario I tested
+first (ask one question, look at the panel) and only broken on the second
+question, scrolled back to the first.
+
+### A real layout bug, caught only by driving the app, not by the build
+
+`npm run build` and `npx tsc --noEmit` were clean throughout and caught
+nothing here. At 375px the whole page scrolled horizontally by 42px — not the
+price table (which behaved exactly as intended, confirmed by
+`scrollWidth > clientWidth` on its own wrapper while the page's
+`document.body.scrollWidth` stayed equal to `clientWidth`), but the input+Send
+flex row: a bare `<input class="flex-1">` in a flex container refuses to
+shrink below its intrinsic content width without `min-w-0`, so it pushed the
+whole page wider than the viewport. Fixed by adding `min-w-0` to the input.
+Neither the type checker nor a static screenshot would have caught this — only
+measuring `scrollWidth` vs `clientWidth` at the real breakpoint did.
+
+### Verified live, not just built
+
+Every mechanism in this milestone's checklist was exercised in a running
+browser rather than trusted from the code: the fire-blanket answer showing
+both `FIR-001-11E` (₁1,000) and `FIR-002-D` (₁1,440) at 1.8×1.8 without
+collapsing; the `FLA-001-13` conflict rendering with no price picked and the
+rose-flagged source card; live tool-call status ("Searching products…")
+appearing before the table streams in; the desktop panel positioned beside the
+chat at 1400px and `display: none` at 375px; a wide fire-extinguisher table
+(589px of content in a 292px container) scrolling in its own box while the
+page stayed at exactly 375px; and a guide section ("How to Read the CTI Price
+Masterlist / Certification markings") rendering as a distinct amber card
+alongside 11 product cards on the OSHC question — confirming multi-source
+merge and guide/product visual separation both work on a real question, not
+just a contrived one.
+
+**Exit condition: implementation-time check (2026-09-22, not yet user-verified):**
+every item above was driven and confirmed in a live `npm run dev` session —
+`npx tsc --noEmit` and `npm run build` both clean. Awaiting the user's own
+pass, particularly on a real phone rather than emulation.
 
 **If this milestone finishes early, add inline `[1]` citation markers.** The
 brief's Key Requirements say "show retrieved sources" — which the panel
