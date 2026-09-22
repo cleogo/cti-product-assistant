@@ -6,8 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "seed": "tsx lib/seed.ts",
-    "smoke-seed": "tsx scripts/smoke-seed.ts"
+    "seed": "tsx lib/seed.ts"
   },
   "dependencies": {
     "@ai-sdk/openai": "^1.3.0",
